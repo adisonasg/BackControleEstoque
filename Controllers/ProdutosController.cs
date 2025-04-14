@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using EstoqueAPI.Models;
+using EstoqueAPI.Services;
+
 
 namespace EstoqueAPI.Controllers
 {
@@ -7,55 +9,53 @@ namespace EstoqueAPI.Controllers
     [Route("api/[controller]")]
     public class ProdutosController : ControllerBase
     {
-        private static List<Produto> produtos = new List<Produto>
+        private readonly ProdutoService _produtoService;
+
+        public ProdutosController(ProdutoService produtoService)
         {
-            new Produto { Id = 1, Nome = "Mouse", Descricao = "Mouse óptico", Quantidade = 50, Preco = 89.90m },
-            new Produto { Id = 2, Nome = "Teclado", Descricao = "Teclado mecânico", Quantidade = 20, Preco = 199.90m }
-        };
+            _produtoService = produtoService;
+        }
 
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> GetTodos()
         {
-            return Ok(produtos);
+            return Ok(_produtoService.GetTodos());
         }
 
         [HttpGet("{id}")]
         public ActionResult<Produto> GetPorId(int id)
         {
-            var produto = produtos.FirstOrDefault(p => p.Id == id);
-            if (produto == null) return NotFound();
+            var produto = _produtoService.GetPorId(id);
+            if (produto == null)
+                return NotFound();
+
             return Ok(produto);
         }
 
         [HttpPost]
         public ActionResult<Produto> Criar([FromBody] Produto novoProduto)
         {
-            novoProduto.Id = produtos.Max(p => p.Id) + 1;
-            produtos.Add(novoProduto);
-            return CreatedAtAction(nameof(GetPorId), new { id = novoProduto.Id }, novoProduto);
+            var criado = _produtoService.Criar(novoProduto);
+            return CreatedAtAction(nameof(GetTodos), new { id = criado.Id }, criado);
         }
 
         [HttpPut("{id}")]
-        public IActionResult Atualizar(int id, [FromBody] Produto produtoAtualizado)
+        public ActionResult Atualizar(int id, [FromBody] Produto produtoAtualizado)
         {
-            var produto = produtos.FirstOrDefault(p => p.Id == id);
-            if (produto == null) return NotFound();
-
-            produto.Nome = produtoAtualizado.Nome;
-            produto.Descricao = produtoAtualizado.Descricao;
-            produto.Quantidade = produtoAtualizado.Quantidade;
-            produto.Preco = produtoAtualizado.Preco;
+            var sucesso = _produtoService.Atualizar(id, produtoAtualizado);
+            if (!sucesso)
+                return NotFound();
 
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public IActionResult Deletar(int id)
+        public ActionResult Remover(int id)
         {
-            var produto = produtos.FirstOrDefault(p => p.Id == id);
-            if (produto == null) return NotFound();
+            var sucesso = _produtoService.Remover(id);
+            if (!sucesso)
+                return NotFound();
 
-            produtos.Remove(produto);
             return NoContent();
         }
     }

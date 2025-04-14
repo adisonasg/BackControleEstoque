@@ -17,6 +17,7 @@ C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\EstoqueAPI.AssemblyInfo.cs
 C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\EstoqueAPI.csproj.CoreCompileInputs.cache
 C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\EstoqueAPI.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\EstoqueAPI.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\EstoqueAPI.sourcelink.json
 C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\staticwebassets.build.json
 C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\adison.gualberto\EstoqueAPI\obj\Debug\net8.0\staticwebassets\msbuild.EstoqueAPI.Microsoft.AspNetCore.StaticWebAssets.props
