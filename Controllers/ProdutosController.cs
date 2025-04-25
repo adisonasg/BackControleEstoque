@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using EstoqueAPI.Models;
 using EstoqueAPI.Services;
 
@@ -7,6 +8,7 @@ namespace EstoqueAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ProdutosController : ControllerBase
     {
         private readonly ProdutoService _produtoService;
