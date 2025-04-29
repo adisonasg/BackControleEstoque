@@ -1,43 +1,53 @@
+using EstoqueAPI.Data;
+using EstoqueAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly AppDbContext _context;
     private readonly TokenService _tokenService;
 
-    public AuthController(TokenService tokenService)
+    public AuthController(AppDbContext context, TokenService tokenService)
     {
+        _context = context;
         _tokenService = tokenService;
     }
 
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginModel login)
+ [HttpPost("login")]
+public IActionResult Login([FromBody] LoginModel login)
+{
+    // Buscar o usuário pelo email
+    var usuario = _context.Usuarios.FirstOrDefault(u => u.Email == login.Email);
+
+    if (usuario == null)
     {
-        // Aqui você pode usar EF para buscar do banco
-        if (login.Email == "admin@teste.com" && login.Senha == "123456")
-        {
-            var usuario = new UsuarioModel
-            {
-                Id = 1,
-                Email = login.Email,
-                Nome = "Administrador"
-            };
+        return Unauthorized(new { mensagem = "Email não encontrado." });
+    }
 
-            var token = _tokenService.GerarToken(usuario);
+    // Verificar se a senha confere
+    if (usuario.Senha != login.Senha)
+    {
+        return Unauthorized(new { mensagem = "Senha incorreta." });
+    }
 
-            Response.Cookies.Append("jwt", token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddHours(1)
-            });
+    // Gerar o token normalmente
+    var token = _tokenService.GerarToken(usuario);
 
-            return Ok(new { mensagem = "Login realizado com sucesso!" });
-        }
+    Response.Cookies.Append("jwt", token, new CookieOptions
+    {
+        HttpOnly = true,
+        Secure = false,
+        SameSite = SameSiteMode.Strict,
+        Expires = DateTime.UtcNow.AddHours(1)
+    });
 
-        return Unauthorized();
+    return Ok(new 
+    { 
+        mensagem = "Login realizado com sucesso!",
+        token = token
+        });
     }
 
     [HttpPost("logout")]
@@ -45,5 +55,34 @@ public class AuthController : ControllerBase
     {
         Response.Cookies.Delete("jwt");
         return Ok(new { mensagem = "Logout realizado com sucesso!" });
+    }
+
+   [HttpPost("register")]
+    public IActionResult Register([FromBody] LoginModel novoUsuario)
+    {
+        if (string.IsNullOrEmpty(novoUsuario.Email) || string.IsNullOrEmpty(novoUsuario.Senha))
+        {
+            return BadRequest(new { mensagem = "Email e senha são obrigatórios." });
+        }
+
+        // Verificar se já existe um usuário com esse email
+        var usuarioExistente = _context.Usuarios.FirstOrDefault(u => u.Email == novoUsuario.Email);
+        if (usuarioExistente != null)
+        {
+            return BadRequest(new { mensagem = "Email já cadastrado." });
+        }
+
+        // Criar novo usuário
+        var novo = new UsuarioModel
+        {
+            Email = novoUsuario.Email,
+            Senha = novoUsuario.Senha,
+            Nome = "Usuário" // ou peça no formulário, se quiser
+        };
+
+        _context.Usuarios.Add(novo);
+        _context.SaveChanges(); // salva no banco
+
+        return Ok(new { mensagem = "Usuário cadastrado com sucesso!" });
     }
 }

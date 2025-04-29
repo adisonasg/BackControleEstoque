@@ -1,6 +1,6 @@
 using EstoqueAPI.Services;
-using EstoqueAPI.Data; // <- para usar AppDbContext
-using Microsoft.EntityFrameworkCore; // <- para usar UseSqlServer
+using EstoqueAPI.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -13,13 +13,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Injeção de dependência
 builder.Services.AddScoped<ProdutoService>();
+builder.Services.AddScoped<TokenService>();
 
-// Ativa o suporte a Controllers, Swagger, etc
+// Controllers e Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configura CORS
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -30,45 +31,27 @@ builder.Services.AddCors(options =>
     });
 });
 
-var app = builder.Build();
-
-// Ativa o Swagger em desenvolvimento
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseCors("AllowAll");
-
-app.UseHttpsRedirection();
-app.UseAuthorization();
-
-// Mapeia os endpoints de controllers
-app.MapControllers();
-
-app.Run();
-
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+// Autenticação JWT via Cookie (leitura do token armazenado em cookie "jwt")
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
         var config = builder.Configuration;
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"])),
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
             ValidIssuer = config["Jwt:Issuer"],
-            ValidAudience = config["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]))
+            ValidAudience = config["Jwt:Audience"]
         };
 
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
-                // Lê o token do cookie
+                // Lê o token do cookie "jwt"
                 context.Token = context.HttpContext.Request.Cookies["jwt"];
                 return Task.CompletedTask;
             }
@@ -76,5 +59,22 @@ builder.Services.AddAuthentication("Bearer")
     });
 
 builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// Swagger
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseCors("AllowAll");
+app.UseHttpsRedirection();
+
+// Ordem correta:
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
+app.Run();
